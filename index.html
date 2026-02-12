@@ -6,131 +6,156 @@
 <title>Diner Bill Calculator</title>
 
 <style>
-body {
-  font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
-  margin: 24px;
-  max-width: 560px;
-}
+  body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; margin: 24px; max-width: 560px; }
+  h1 { font-size: 20px; margin: 0 0 16px; }
+  .card { border: 1px solid #ddd; border-radius: 12px; padding: 16px; }
+  label { display:block; font-weight: 600; margin-bottom: 6px; }
 
-h1 { font-size: 20px; margin-bottom: 16px; }
+  .input-row { display:flex; gap:10px; align-items:stretch; }
+  input[type="number"] {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 10px 12px;
+    border: 1px solid #ccc;
+    border-radius: 10px;
+    font-size: 16px;
+  }
+  button {
+    border: 1px solid #ccc;
+    background: #f7f7f7;
+    border-radius: 10px;
+    padding: 0 12px;
+    font-size: 14px;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  button:active { transform: translateY(1px); }
 
-.card {
-  border: 1px solid #ddd;
-  border-radius: 12px;
-  padding: 16px;
-}
+  table { width: 100%; border-collapse: collapse; margin-top: 14px; }
+  td { padding: 10px 0; border-bottom: 1px solid #eee; vertical-align: top; }
+  td:last-child { text-align: right; font-variant-numeric: tabular-nums; }
 
-label {
-  display:block;
-  font-weight:600;
-  margin-bottom:6px;
-}
-
-input[type="number"] {
-  width:100%;
-  box-sizing:border-box;
-  padding:10px 12px;
-  border:1px solid #ccc;
-  border-radius:10px;
-  font-size:16px;
-}
-
-table {
-  width:100%;
-  border-collapse:collapse;
-  margin-top:14px;
-}
-
-td {
-  padding:10px 0;
-  border-bottom:1px solid #eee;
-}
-
-td:last-child {
-  text-align:right;
-  font-variant-numeric: tabular-nums;
-}
-
-.section-gap td {
-  border-bottom:none;
-  padding-top:18px;
-}
-
-.total {
-  font-weight:800;
-}
-
-.muted {
-  color:#666;
-  font-size:12px;
-  margin-top:10px;
-}
+  .bold-row td { font-weight: 800; }
+  .section-head td {
+    border-bottom: none;
+    padding-top: 18px;
+    padding-bottom: 6px;
+    font-weight: 800;
+    color: #222;
+  }
+  .muted { color: #666; font-size: 12px; margin-top: 10px; }
 </style>
 </head>
 
 <body>
-
 <h1>Diner Bill Calculator</h1>
 
 <div class="card">
+  <label for="pretax">Total (pre-tax)</label>
+  <div class="input-row">
+    <input id="pretax" type="number" inputmode="decimal" min="0" step="0.01" value="0.00" />
+    <button id="clearBtn" type="button" aria-label="Clear">Clear</button>
+  </div>
 
-<label for="pretax">Total (pre-tax)</label>
-<input id="pretax" type="number" min="0" step="0.01" value="0.00" />
+  <table>
+    <tr><td>Tax (6%)</td><td id="tax">$0.00</td></tr>
+    <tr><td>Total + Tax</td><td id="totalWithTax">$0.00</td></tr>
+    <tr><td>Credit card fee (4% on Total+Tax)</td><td id="ccFeeOnTax">$0.00</td></tr>
 
-<table>
-<tr><td>Tax (6%)</td><td id="tax">$0.00</td></tr>
-<tr><td>Total + Tax</td><td id="totalWithTax">$0.00</td></tr>
+    <tr class="bold-row"><td>Total + Tax + 4%</td><td id="totalWithTaxAndCC">$0.00</td></tr>
 
-<tr><td>Credit card fee (4% on Total+Tax)</td><td id="ccFee">$0.00</td></tr>
-<tr><td>Total + Tax + 4%</td><td id="afterCard">$0.00</td></tr>
+    <tr class="section-head"><td colspan="2">20% Gratuity</td></tr>
+    <tr><td>Tip (20%)</td><td id="tip">$0.00</td></tr>
+    <tr><td>Total + Tax + Tip</td><td id="totalWithTaxTip">$0.00</td></tr>
 
-<tr class="section-gap"><td colspan="2"></td></tr>
+    <tr class="bold-row"><td>Total + Tax + 4%</td><td id="totalWithTaxAndCC_2">$0.00</td></tr>
 
-<tr><td>Tip (20%)</td><td id="tip">$0.00</td></tr>
-<tr class="total"><td>Final Total</td><td id="final">$0.00</td></tr>
-</table>
+    <tr><td>Total + Tax + Tip + 4%</td><td id="final">$0.00</td></tr>
+  </table>
 
-<div class="muted">
-Only the pre-tax total is editable. Rates are fixed in code.
-</div>
-
+  <div class="muted">Only the pre-tax total is editable. Rates are fixed in code.</div>
 </div>
 
 <script>
-const TAX = 0.06;
-const CC  = 0.04;
-const TIP = 0.20;
+  const TAX = 0.06;
+  const CC  = 0.04;
+  const TIP = 0.20;
 
-const $ = (id) => document.getElementById(id);
-const input = $("pretax");
+  const $ = (id) => document.getElementById(id);
+  const input = $("pretax");
+  const clearBtn = $("clearBtn");
 
-function money(n){
-  return n.toLocaleString(undefined,{style:"currency",currency:"USD"});
-}
+  const money = (n) => (Number.isFinite(n) ? n : 0)
+    .toLocaleString(undefined, { style: "currency", currency: "USD" });
 
-function calc(){
-  const total = Math.max(0, parseFloat(input.value||0));
+  // Prevent "0.0014" behavior: first focus clears, and focus selects all
+  let clearedOnThisFocus = false;
 
-  const tax = total * TAX;
-  const totalWithTax = total + tax;
+  function selectAllSoon() {
+    // Ensures selection works reliably after click/focus
+    requestAnimationFrame(() => input.select());
+  }
 
-  const ccFee = totalWithTax * CC;
-  const afterCard = totalWithTax + ccFee;
+  input.addEventListener("focus", () => {
+    // If value is the default/zero-ish, clear it once on focus
+    if (!clearedOnThisFocus) {
+      const v = (input.value || "").trim();
+      if (v === "0" || v === "0.0" || v === "0.00" || v === "") input.value = "";
+      clearedOnThisFocus = true;
+    }
+    selectAllSoon();
+  });
 
-  const tip = afterCard * TIP;
-  const final = afterCard + tip;
+  input.addEventListener("click", selectAllSoon);
 
-  $("tax").textContent = money(tax);
-  $("totalWithTax").textContent = money(totalWithTax);
-  $("ccFee").textContent = money(ccFee);
-  $("afterCard").textContent = money(afterCard);
-  $("tip").textContent = money(tip);
-  $("final").textContent = money(final);
-}
+  input.addEventListener("blur", () => {
+    // Reset the "clear on focus" logic next time user returns
+    clearedOnThisFocus = false;
+    // If left blank, normalize to 0.00
+    if ((input.value || "").trim() === "") input.value = "0.00";
+    calc();
+  });
 
-input.addEventListener("input", calc);
-calc();
+  function calc() {
+    const total = Math.max(0, parseFloat(input.value || "0"));
+
+    const tax = total * TAX;
+    const totalWithTax = total + tax;
+
+    // 4% fee on Total+Tax (shown and used)
+    const ccFeeOnTax = totalWithTax * CC;
+    const totalWithTaxAndCC = totalWithTax + ccFeeOnTax;
+
+    // Tip is calculated on the INPUT total * 20% (per your instruction)
+    const tip = total * TIP;
+
+    const totalWithTaxTip = totalWithTax + tip;
+
+    // Re-show Total+Tax+4% as a commonly used number
+    const totalWithTaxAndCC_2 = totalWithTaxAndCC;
+
+    // 4% on Total+Tax+Tip (final line requested)
+    const ccFeeOnTaxTip = totalWithTaxTip * CC;
+    const final = totalWithTaxTip + ccFeeOnTaxTip;
+
+    $("tax").textContent = money(tax);
+    $("totalWithTax").textContent = money(totalWithTax);
+    $("ccFeeOnTax").textContent = money(ccFeeOnTax);
+    $("totalWithTaxAndCC").textContent = money(totalWithTaxAndCC);
+    $("tip").textContent = money(tip);
+    $("totalWithTaxTip").textContent = money(totalWithTaxTip);
+    $("totalWithTaxAndCC_2").textContent = money(totalWithTaxAndCC_2);
+    $("final").textContent = money(final);
+  }
+
+  clearBtn.addEventListener("click", () => {
+    input.value = "0.00";
+    input.focus();
+    calc();
+  });
+
+  input.addEventListener("input", calc);
+  calc();
 </script>
-
 </body>
 </html>
