@@ -36,13 +36,17 @@
   td:last-child { text-align: right; font-variant-numeric: tabular-nums; }
 
   .bold-row td { font-weight: 800; }
+
+  /* More space + centered header */
   .section-head td {
     border-bottom: none;
-    padding-top: 18px;
-    padding-bottom: 6px;
+    padding-top: 28px;   /* increased space above */
+    padding-bottom: 8px;
     font-weight: 800;
     color: #222;
+    text-align: center;  /* centered */
   }
+
   .muted { color: #666; font-size: 12px; margin-top: 10px; }
 </style>
 </head>
@@ -68,7 +72,8 @@
     <tr><td>Tip (20%)</td><td id="tip">$0.00</td></tr>
     <tr><td>Total + Tax + Tip</td><td id="totalWithTaxTip">$0.00</td></tr>
 
-    <tr class="bold-row"><td>Total + Tax + 4%</td><td id="totalWithTaxAndCC_2">$0.00</td></tr>
+    <!-- FIXED: this row is now the 4% fee on Total+Tax+Tip -->
+    <tr><td>Credit card fee (4% on Total+Tax+Tip)</td><td id="ccFeeOnTaxTip">$0.00</td></tr>
 
     <tr><td>Total + Tax + Tip + 4%</td><td id="final">$0.00</td></tr>
   </table>
@@ -91,13 +96,9 @@
   // Prevent "0.0014" behavior: first focus clears, and focus selects all
   let clearedOnThisFocus = false;
 
-  function selectAllSoon() {
-    // Ensures selection works reliably after click/focus
-    requestAnimationFrame(() => input.select());
-  }
+  function selectAllSoon() { requestAnimationFrame(() => input.select()); }
 
   input.addEventListener("focus", () => {
-    // If value is the default/zero-ish, clear it once on focus
     if (!clearedOnThisFocus) {
       const v = (input.value || "").trim();
       if (v === "0" || v === "0.0" || v === "0.00" || v === "") input.value = "";
@@ -109,9 +110,7 @@
   input.addEventListener("click", selectAllSoon);
 
   input.addEventListener("blur", () => {
-    // Reset the "clear on focus" logic next time user returns
     clearedOnThisFocus = false;
-    // If left blank, normalize to 0.00
     if ((input.value || "").trim() === "") input.value = "0.00";
     calc();
   });
@@ -122,29 +121,29 @@
     const tax = total * TAX;
     const totalWithTax = total + tax;
 
-    // 4% fee on Total+Tax (shown and used)
+    // 4% fee on Total+Tax (shown and used for bold line)
     const ccFeeOnTax = totalWithTax * CC;
     const totalWithTaxAndCC = totalWithTax + ccFeeOnTax;
 
-    // Tip is calculated on the INPUT total * 20% (per your instruction)
+    // Tip is on pre-tax total
     const tip = total * TIP;
 
     const totalWithTaxTip = totalWithTax + tip;
 
-    // Re-show Total+Tax+4% as a commonly used number
-    const totalWithTaxAndCC_2 = totalWithTaxAndCC;
-
-    // 4% on Total+Tax+Tip (final line requested)
+    // 4% fee on Total+Tax+Tip (this was the incorrect line before)
     const ccFeeOnTaxTip = totalWithTaxTip * CC;
+
     const final = totalWithTaxTip + ccFeeOnTaxTip;
 
     $("tax").textContent = money(tax);
     $("totalWithTax").textContent = money(totalWithTax);
     $("ccFeeOnTax").textContent = money(ccFeeOnTax);
     $("totalWithTaxAndCC").textContent = money(totalWithTaxAndCC);
+
     $("tip").textContent = money(tip);
     $("totalWithTaxTip").textContent = money(totalWithTaxTip);
-    $("totalWithTaxAndCC_2").textContent = money(totalWithTaxAndCC_2);
+    $("ccFeeOnTaxTip").textContent = money(ccFeeOnTaxTip);
+
     $("final").textContent = money(final);
   }
 
